@@ -1,0 +1,206 @@
+# GitHub Release 发布指南
+
+## 一、版本号规则
+
+建议使用**语义化版本号**（Semantic Versioning）规范：
+
+```
+MAJOR.MINOR.PATCH
+```
+
+- **MAJOR**：不兼容的API更改
+- **MINOR**：向下兼容的新功能
+- **PATCH**：向下兼容的bug修复
+
+**示例**：
+- `v1.0.0`：第一个正式版本
+- `v1.1.0`：添加了新功能
+- `v1.1.1`：修复了bug
+- `v2.0.0`：进行了不兼容的大更改
+
+## 二、发布前准备
+
+1. **更新版本信息**（可选）
+   - 如果项目中有版本文件，需要先更新版本号
+   - 例如：`app.py`中的`__version__`变量
+
+2. **运行测试**（可选）
+   - 确保所有功能正常工作
+   - 修复发现的bug
+
+3. **更新文档**
+   - 更新`README.md`中的版本信息
+   - 记录新增功能和修复的问题
+
+4. **提交代码**
+   ```bash
+   git add .
+   git commit -m "准备发布 v1.0.0"
+   git push origin main
+   ```
+
+## 三、发布Release步骤
+
+### 1. 登录GitHub仓库
+
+打开项目仓库：`https://github.com/tgszy/openlist-helper`
+
+### 2. 进入Release页面
+
+有两种方式：
+- 点击页面顶部的`Releases`标签
+- 或点击右侧的`Tags`标签，然后点击`Create a new release`
+
+### 3. 创建Release
+
+点击`Draft a new release`按钮
+
+### 4. 填写Release表单
+
+#### 基本信息
+
+| 字段 | 填写说明 | 示例 |
+|------|----------|------|
+| **Tag version** | 版本号，必须以`v`开头 | `v1.0.0` |
+| **Target** | 发布的分支，通常选择`main` | `main` |
+| **Release title** | 发布标题，简明扼要 | `v1.0.0 - 首次正式发布` |
+
+#### Release说明（Description）
+
+建议包含以下内容：
+
+1. **版本概述**：简短描述版本的主要内容
+2. **新增功能**：使用列表形式列出
+3. **修复的问题**：使用列表形式列出
+4. **使用方法**：简要说明如何使用新版本
+5. **兼容性说明**：如有不兼容的更改需特别说明
+
+**示例**：
+
+```markdown
+## v1.0.0 - 首次正式发布
+
+OpenList Helper 的第一个正式版本，提供了完整的 Web UI 和批量导入功能。
+
+### 新增功能
+- ✅ 完整的后台管理 Web UI
+- ✅ 支持阿里云盘、夸克网盘、115网盘、天翼云盘
+- ✅ 资源批量导入功能
+- ✅ Docker 支持
+- ✅ GitHub Actions 自动构建推送
+
+### 修复的问题
+- 修复了网盘连接超时问题
+- 优化了导入结果展示
+
+### 使用方法
+```bash
+docker run -p 5000:5000 tgszy/openlist-helper:latest
+```
+
+访问 http://localhost:5000 开始使用
+
+### 兼容性
+完全兼容 OpenList v0.5.0+ 版本
+```
+
+#### 附加文件（Assets）
+
+可选上传二进制文件、安装包等：
+- Windows 可执行文件
+- Linux 二进制包
+- macOS 应用程序
+- 源代码压缩包（GitHub 会自动生成）
+
+#### 预发布选项
+
+如果是测试版本，可以勾选`Set as a pre-release`选项
+
+### 5. 发布Release
+
+- 点击`Publish release`按钮发布正式版本
+- 或点击`Save draft`按钮保存为草稿，稍后发布
+
+## 四、与Docker自动推送的关联
+
+当你在GitHub上创建Release时，会自动触发以下流程：
+
+1. GitHub Actions 工作流（`.github/workflows/docker-push.yml`）会被触发
+2. 自动构建 Docker 镜像
+3. 推送镜像到 Docker Hub，包含以下标签：
+   - 版本标签：`tgszy/openlist-helper:v1.0.0`
+   - latest标签：`tgszy/openlist-helper:latest`
+
+**注意**：确保已在GitHub仓库设置了以下Secrets：
+- `DOCKERHUB_USERNAME`：Docker Hub 用户名
+- `DOCKERHUB_TOKEN`：Docker Hub 访问令牌
+
+## 五、Release管理
+
+### 1. 查看Release
+
+在`Releases`页面可以查看所有发布的版本
+
+### 2. 编辑Release
+
+点击Release页面的`Edit`按钮可以修改发布信息
+
+### 3. 删除Release
+
+点击Release页面的`Delete`按钮可以删除发布（不会删除对应的tag）
+
+### 4. 下载统计
+
+在Release页面可以查看每个版本的下载次数
+
+## 六、最佳实践
+
+1. **定期发布**：根据功能更新情况定期发布新版本
+2. **详细说明**：提供清晰、详细的Release Notes
+3. **关联Issue和PR**：在Release说明中关联相关的Issue和Pull Request
+4. **使用模板**：可以创建Release模板，提高发布效率
+5. **测试版本**：重要功能可以先发布预发布版本进行测试
+
+## 七、常见问题
+
+### 1. Release创建后可以修改吗？
+
+可以，点击Release页面的`Edit`按钮即可修改发布信息
+
+### 2. 可以删除Release吗？
+
+可以删除Release，但不会删除对应的git tag
+
+### 3. Docker镜像没有自动推送？
+
+- 检查GitHub Actions工作流是否正常运行
+- 检查Docker Hub Secrets是否正确设置
+- 检查tag命名是否符合规则
+
+### 4. 如何回滚版本？
+
+可以重新发布之前的tag，或创建一个新的修复版本
+
+## 八、Release模板（可选）
+
+可以在仓库的`.github/ISSUE_TEMPLATE`目录下创建`release_template.md`文件，内容如下：
+
+```markdown
+## [版本号] - [发布日期]
+
+### 版本概述
+
+### 新增功能
+
+### 修复的问题
+
+### 改进的功能
+
+### 使用方法
+
+### 兼容性说明
+
+### 已知问题
+```
+
+这样在创建Release时可以直接使用这个模板，提高发布效率。
