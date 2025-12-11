@@ -1,41 +1,47 @@
 name: Build and Push Docker Image
 
+# 只在创建 release 或推送 v*.*.* 格式的 tag 时触发
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*.*.*' ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*.*.*'           # 只有 v1.0.0 这类正式版本 tag 才会触发
+
+  # 如果你使用 GitHub Releases 的 "Create a release" 页面创建 release
+  # 它实际上也会推送一个 tag，所以上面那行已经覆盖了
+  # 但为了更明确，也可以用 release 事件（可选）：
+  # release:
+  #   types: [published]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          # 重要：打 tag 时需要完整历史来提取正确的版本信息
+          fetch-depth: 0
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5    # 推荐使用最新版 v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-sha-,suffix=,format=short
-            latest
-      
-      - name: Build and push
-        uses: docker/build-push-action@v5
+            type=semver,pattern={{version}}          # v1.2.3 → 1.2.3
+            type=semver,pattern={{major}}.{{minor}}  # 1.2
+            type=semver,pattern={{major}}            # 1
+            latest                                   # 同时打 latest（可选）
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true                                # 现在一定推送（因为只有 tag 时才运行）
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
