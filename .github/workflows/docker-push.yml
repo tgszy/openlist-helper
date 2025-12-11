@@ -1,25 +1,20 @@
 name: Build and Push Docker Image
 
-# 只在创建 release 或推送 v*.*.* 格式的 tag 时触发
+# 只在推送 v1.2.3 这种三段式正式 tag 时触发
+# GitHub Web 创建 Release 时也会自动推送 tag，所以不用再写 release 事件
 on:
   push:
     tags:
-      - 'v*.*.*'           # 只有 v1.0.0 这类正式版本 tag 才会触发
-
-  # 如果你使用 GitHub Releases 的 "Create a release" 页面创建 release
-  # 它实际上也会推送一个 tag，所以上面那行已经覆盖了
-  # 但为了更明确，也可以用 release 事件（可选）：
-  # release:
-  #   types: [published]
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # 严格只匹配 v1.0.0、v2.3.4 这类，不匹配 v1、v1.2、v0.0.1-alpha 等
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          # 重要：打 tag 时需要完整历史来提取正确的版本信息
-          fetch-depth: 0
+          fetch-depth: 0   # semver 需要完整 git 历史才能正确解析
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -27,21 +22,39 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      # 提取版本号并生成 tag（关键一步）
+      - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5    # 推荐使用最新版 v5
+        uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper
+          # 只生成我们想要的 tag，坚决不生成 latest（可自行决定要不要）
           tags: |
-            type=semver,pattern={{version}}          # v1.2.3 → 1.2.3
-            type=semver,pattern={{major}}.{{minor}}  # 1.2
-            type=semver,pattern={{major}}            # 1
-            latest                                   # 同时打 latest（可选）
+            type=semver,pattern={{version}}          # 例如：1.2.3
+            type=semver,pattern={{major}}.{{minor}}  # 例如：1.2
+            type=semver,pattern={{major}}            # 例如：1
+            type=raw,value=latest,enable={{is_default_branch}}  # 可选：只有 main 分支的最新 tag 才打 latest
 
+      # 【强烈推荐】增加一道保险，防止万一触发了错误 tag（比如有人手滑推了 v0 或 v1.2）
+      - name: Validate semantic version
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          echo "当前解析出版本: $VERSION"
+          
+          # 如果版本以 0. 开头，或者根本没解析到版本，直接失败
+          if [[ "$VERSION" =~ ^0\. ]] || [[ -z "$VERSION" ]]; then
+            echo "检测到无效版本 $VERSION，禁止推送镜像！"
+            exit 1
+          fi
+
+      # 构建并推送
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true                                # 现在一定推送（因为只有 tag 时才运行）
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # 可选：开启缓存加速构建（强烈推荐）
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:buildcache,mode=max
