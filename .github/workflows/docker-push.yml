@@ -48,13 +48,13 @@ jobs:
           tags:
             - type: ref
               event: branch
-              prefix: ""
-              suffix: ""
+              prefix: ''
+              suffix: ''
             - type: ref
               event: tag
             - type: sha
-              prefix: "sha-"
-              suffix: ""
+              prefix: 'sha-'
+              suffix: ''
             - type: raw
               value: latest
               priority: -1
