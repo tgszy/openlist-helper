@@ -3,7 +3,7 @@ name: Build and Push Docker Image
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'   # 严格只匹配 v1.0.0、v2.3.4，彻底杜绝 v1、v1.2、v0.0.1 等
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # 严格只匹配 v1.0.0、v2.3.4，杜绝 v1、v1.2 等
 
 jobs:
   build-and-push:
@@ -12,16 +12,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0      # 必须完整历史
+          fetch-depth: 0
 
-      # 关键一步：手动提取当前被推送的 tag（最精准！）
+      # 提取触发 tag（带安全检查）
       - name: Get the tag name that triggered the workflow
         id: tag
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           echo "Triggered tag: $TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          # 再次保险：如果不是 vX.Y.Z 格式，直接失败
+          # 保险：如果不是 vX.Y.Z 格式，直接失败
           if ! [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "非标准版本号 $TAG，拒绝构建！"
             exit 1
@@ -33,25 +33,33 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 完全手动写死 tag，彻底不依赖 metadata-action 的 semver 自动解析
+      # 生成 Docker tags（修复 heredoc 语法）
       - name: Generate Docker tags
         id: docker_tags
         run: |
           VERSION=${{ steps.tag.outputs.tag }}        # 例如 v1.2.3
           CLEAN=${VERSION#v}                          # 去掉 v → 1.2.3
-          MAJOR=$(echo $CLEAN | cut -d. -f1)
-          MINOR=$(echo $CLEAN | cut -d. -f1-2)
+          MAJOR=$(echo $CLEAN | cut -d. -f1)          # 1
+          MINOR=$(echo $CLEAN | cut -d. -f1-2)        # 1.2
           
           echo "版本信息：完整=$CLEAN, major=$MAJOR, minor=$MINOR"
           
-          TAGS<<EOF
+          # 修复：用 cat > heredoc 生成多行 TAGS
+          cat > tags.txt << EOF
           ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:$CLEAN
           ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:$MINOR
           ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:$MAJOR
           ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper:latest
           EOF
           
-          echo "tags=$(echo $TAGS | tr ' ' ',')" >> $GITHUB_OUTPUT
+          # 读取文件并转成逗号分隔（用于 tags 输入）
+          TAGS=$(tr '\n' ',' < tags.txt | sed 's/,$//')
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          
+          # 清理临时文件
+          rm tags.txt
+          
+          # 生成 labels
           echo "labels=org.opencontainers.image.version=$CLEAN" >> $GITHUB_OUTPUT
 
       - name: Build and push
@@ -60,15 +68,4 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.docker_tags.outputs.tags }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.tag.outputs.tag }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      # 可选：构建缓存加速（强烈推荐）
-      # - name: Docker build cache
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: /tmp/.buildx-cache
-      #     key: buildx-${{ runner.os }}-${{ github.sha }}
-      #     restore-keys: buildx-${{ runner.os }}-
+          labels: ${{ steps.docker_tags.outputs.labels }}
