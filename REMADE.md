@@ -11,8 +11,8 @@ OpenList 快速导入神器是一个便捷的工具，用于批量添加阿里�
 **方式一：本地构建镜像**
 
 ```bash
-docker build -t openlist-importer .
-docker run -d -p 3456:3456 --name openlist-importer openlist-importer
+docker build -t openlist-helper .
+docker run -d -p 3456:3456 --name openlist-helper openlist-helper
 ```
 
 **方式二：使用环境变量**
@@ -20,14 +20,14 @@ docker run -d -p 3456:3456 --name openlist-importer openlist-importer
 ```bash
 docker run -d -p 3456:3456 \
   -e FLASK_SECRET=your-secret-key \
-  --name openlist-importer \
-  openlist-importer
+  --name openlist-helper \
+  openlist-helper
 ```
 
 **方式三：直接使用Docker Hub镜像**
 
 ```bash
-docker run -d -p 3456:3456 --name openlist-importer <your-dockerhub-username>/openlist-importer:latest
+docker run -d -p 3456:3456 --name openlist-helper <your-dockerhub-username>/openlist-helper:latest
 ```
 
 ### 2. Docker Compose运行
@@ -42,12 +42,12 @@ version: '3.8'
 services:
   openlist-helper:
     build: .
-    image: openlist-importer
+    image: openlist-helper
     container_name: openlist-helper
     ports:
       - "3456:3456"
     environment:
-      - FLASK_SECRET=openlist-importer-2025-final
+      - FLASK_SECRET=openlist-helper-2025-final
     restart: unless-stopped
 
 # 启动服务
