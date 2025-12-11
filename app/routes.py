@@ -179,7 +179,7 @@ def refresh():
             <thead class="bg-gray-800"><tr><th>类型</th><th>路径</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
             {% for s in existing %}
-            <tr class="border-t border-gray-700"><td>{{ DISKS[s.driver].name }}</td><td>{{ s.mount_path }}</td><td>{% if s.status != "error" %}有效{% else %}失效{% endif %}</td><td><button hx-delete="/delete/{{ s.id }}" hx-target="#disk-list" hx-swap="innerHTML" class="text-red-400 text-xs">删除</button></td></tr>
+            <tr class="border-t border-gray-700"><td>{{ DISK_CONFIGS[s.driver].name }}</td><td>{{ s.mount_path }}</td><td>{% if s.status != "error" %}有效{% else %}失效{% endif %}</td><td><button hx-delete="/delete/{{ s.id }}" hx-target="#disk-list" hx-swap="innerHTML" class="text-red-400 text-xs">删除</button></td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -309,7 +309,7 @@ def detect_storage():
             <thead class="bg-gray-800"><tr><th>类型</th><th>路径</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
             {% for s in existing %}
-            <tr class="border-t border-gray-700"><td>{{ DISKS[s.driver].name }}</td><td>{{ s.mount_path }}</td><td>{% if s.status != "error" %}有效{% else %}失效{% endif %}</td><td><button hx-delete="/delete/{{ s.id }}" hx-target="#disk-list" hx-swap="innerHTML" class="text-red-400 text-xs">删除</button></td></tr>
+            <tr class="border-t border-gray-700"><td>{{ DISK_CONFIGS[s.driver].name }}</td><td>{{ s.mount_path }}</td><td>{% if s.status != "error" %}有效{% else %}失效{% endif %}</td><td><button hx-delete="/delete/{{ s.id }}" hx-target="#disk-list" hx-swap="innerHTML" class="text-red-400 text-xs">删除</button></td></tr>
             {% endfor %}
             </tbody>
         </table>
