@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  openlist-helper:
+    build: .
+    image: openlist-importer
+    container_name: openlist-helper
+    ports:
+      - "3456:3456"
+    environment:
+      - FLASK_SECRET=openlist-importer-2025-final
+    restart: unless-stopped
