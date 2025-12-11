@@ -23,7 +23,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/openlist-importer
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/openlist-helper
           tags: |
             type=ref,event=branch
             type=ref,event=pr
