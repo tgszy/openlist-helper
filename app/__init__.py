@@ -7,7 +7,7 @@ load_dotenv()
 
 # 创建Flask应用
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET', 'openlist-importer-2025-final')
+app.secret_key = os.getenv('FLASK_SECRET', 'openlist-helper-2025-final')
 
 # 支持的网盘
 DISK_CONFIGS = {
