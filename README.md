@@ -41,13 +41,20 @@ version: '3.8'
 
 services:
   openlist-helper:
-    build: .
-    image: openlist-helper
+    image: tgszy/openlist-helper:latest     # 直接拉取 Docker Hub 最新镜像
     container_name: openlist-helper
     ports:
-      - "3456:3456"
+      - "3456:3456"                         # 宿主机:容器内
     environment:
       - FLASK_SECRET=openlist-helper-2025-final
+    restart: unless-stopped
+    network_mode: bridge                    # 明确使用桥接网络（其实不写也是默认 bridge）
+
+# （可选）如果你想固定用某个具体版本而不是 latest，可以这样写：
+# image: tgszy/openlist-helper:1.2.3
+
+# （可选）如果你希望每次启动都强制拉取最新镜像，可以加 pull_policy：
+    pull_policy: always
     restart: unless-stopped
 
 # 启动服务
